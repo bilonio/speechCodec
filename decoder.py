@@ -45,24 +45,24 @@ def RPE_frame_st_decoder(LARc, curr_frame_st_resd):
 
     return s_ro
 
-    def RPE_frame_slt_decoder(LARc, Nc, bc, curr_frame_ex_full, curr_frame_st_resd):
-        d_synth = curr_frame_st_resd
-        e = curr_frame_ex_full
+def RPE_frame_slt_decoder(LARc, Nc, bc, curr_frame_ex_full, curr_frame_st_resd):
+    d_synth = curr_frame_st_resd
+    e = curr_frame_ex_full
 
-        # decoding of Nc values
-        N = Nc
+    # decoding of Nc values
+    N = Nc
 
-        # decoding of bc values
-        QLB = [0.1, 0.35, 0.65, 1]
-        for j in range(4):
-            b[j] = QLB[bc[j]]
+    # decoding of bc values
+    QLB = [0.1, 0.35, 0.65, 1]
+    for j in range(4):
+        b[j] = QLB[bc[j]]
 
-        # Long term synthesis filtering
-        for j in range(4):
-            for k in range(40):
-                d_synth[k0 + j * 40 + k] = (
-                    e[k0 + j * 40 + k] + b[j] * d_est[k0 + j * 40 + k]
-                )
-                d_est[k] = d_synth[k - N[j]]
+    # Long term synthesis filtering
+    for j in range(4):
+        for k in range(40):
+            d_synth[k0 + j * 40 + k] = (
+                e[k0 + j * 40 + k] + b[j] * d_est[k0 + j * 40 + k]
+            )
+            d_est[k] = d_synth[k - N[j]]
 
     return s0, curr_frame_st_resd
