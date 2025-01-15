@@ -8,12 +8,16 @@ from scipy.signal import lfilter
 
 def RPE_frame_st_decoder(LARc, curr_frame_st_resd):
     # Decoding of the quantized Log-Area ratios
+    A = [20, 20, 20, 20, 13.637, 15.00, 8.334, 8.824]
+    B = [0, 0, 4, -5, 0.184, -3.5, -0.666, -2.235]
+    LARd = np.zeros(8)
     for i in range(8):
         LARd[i] = (LARc[i] - B[i]) / A[i]
 
     # Interpolation of the log-Area Rations (optional)
 
     # Transformation of the log-Area Rations into reflection coefficients
+    rd = np.zeros(8)
     if np.abs(LARd[i]) < 0.675:
         rd[i] = LARd[i]
     elif np.abs(LARd[i] >= 0.675 and np.abs(LARd[i] < 1.225)):

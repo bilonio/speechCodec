@@ -36,7 +36,6 @@ def RPE_frame_st_coder(s0, prev_frame_st_resd):
     ACF = np.zeros(9)  # autocorrelation coefficients
     for k in range(9):
         ACF[k] = sum([s[j] * s[j - k] for j in range(k, 160)])
-    print(ACF)
 
     # Calculate reflection coefficients
     w = np.zeros(8)  # reflection coefficients
