@@ -24,6 +24,7 @@ def RPE_frame_st_coder(s0, prev_frame_st_resd):
     alpha = 32735 * 2 ** (-15)
     for i in range(1, 160):
         s_of[i] = s0[i] - s0[i - 1] + alpha * s_of[i - 1]
+
     # Preemphasis
     s = np.zeros(160)  # preemphasized signal
     beta = 28180 * 2 ** (-15)
@@ -102,6 +103,7 @@ def RPE_frame_slt_coder(s0, prev_frame_st_resd):
     alpha = 32735 * 2 ** (-15)
     for i in range(1, 160):
         s_of[i] = s0[i] - s0[i - 1] + alpha * s_of[i - 1]
+
     # Preemphasis
     s = np.zeros(160)  # preemphasized signal
     beta = 28180 * 2 ** (-15)
@@ -170,25 +172,26 @@ def RPE_frame_slt_coder(s0, prev_frame_st_resd):
     coeff = [1, -a[0], -a[1], -a[2], -a[3], -a[4], -a[5], -a[6], -a[7]]
     d = lfilter(coeff, 1, s)  # apply FIR filter
 
-
     # Long term analysis
 
     # Calculation of the LTP parameters
-    d_synth = prev_frame_st_resd
-    d_est = np.zeros(160)
-
-    for j in range(4):
-        for i in range(40):
-            for lamda in range(40, 120):
-                Rj[lamda] += d[k0 + j * 40 + i] * d_synth[k0 + j * 40 + i - lamda]
-                Sj[lamda] += (d_synth[k0 + j * 40 + i - lamda]) ** 2
-            N[j] = np.argmax(Rj, axis=0)
-            b[j] = Rj[N[j]] / Sj[N[j]]
-    Nc = N  # coding of LTP lags
-
-    # quantization of LTP gains
+   # prev_d = prev_frame_st_resd[40:160]  # extract only the last 120 samples
+    prev_d = prev_frame_st_resd
+    # print(prev_d)
+    k0 = 0
     DLB = [0.2, 0.5, 0.8]
-    for j in range(len(b)):
+    QLB = [0.1, 0.35, 0.65, 1]
+    N = np.zeros(4, dtype=int)
+    b = np.zeros(4)
+    Nc = np.zeros(4, dtype=int)
+    bc = np.zeros(4, dtype=int)
+    e = np.zeros(160)
+    for j in range(4):
+        kj = k0 + 40 * j  # start of subframe
+        N[j], b[j] = RPE_subframe_slt_lte(d[kj : kj + 40], prev_d)  # get N and b values
+        Nc[j] = N[j]  # quantization of LTP delays
+
+        # quantization of LTP gains
         if b[j] <= DLB[0]:
             bc[j] = 0
         elif b[j] > DLB[0] and b[j] <= DLB[1]:
@@ -198,23 +201,29 @@ def RPE_frame_slt_coder(s0, prev_frame_st_resd):
         elif b[j] > DLB[2]:
             bc[j] = 3
 
-    # Long term analysis filtering
+        # decoding of bc values
+        b[j] = QLB[bc[j]]
 
-    for j in range(4):
-        for k in range(40):
-            d_est[k0 + j * 40 + k] = (
-                bc[j] * d_synth[k0 + j * 40 + k - Nc[j]]
-            )  # bc has to be decoded
-            e[k0 + j * 40 + k] = d[k0 + j * 40 + k] - d_est[k0 + j * 40 + k]
+        # Long term analysis filtering
+        for k in range(1, 40):
+            # print(prev_d[kj - Nc[j]])
+            e[kj + k] = d[kj + k] - bc[j] * prev_d[119 + k - Nc[j]]
+            prev_d.append(e[kj + k] + b[j] * prev_d[119 + k - N[j]])
+            prev_d.pop(0)
 
-    return LARc, Nc, bc, e, d
+    return LARc, Nc, bc, e, prev_d
 
 
 def RPE_subframe_slt_lte(d, prev_d):
+    # prev_d = np.concatenate(prev_d)
+    R = np.zeros(80)
+    S = np.zeros(80)
     for i in range(40):
         for lamda in range(40, 120):
-            R[lamda] += d[k0 + j * 40 + i] * prev_d[k0 + j * 40 + i - lamda]
-            S[lamda] += (prev_d[k0 + j * 40 + i - lamda]) ** 2
-        N = np.argmax(R, axis=0)
-        b = R[N] / S[N]
-    return N, b
+            # print("dokimh", i, lamda, prev_d[i+119 - lamda],d[i])
+            R[119 - lamda] += d[i] * prev_d[i + 119 - lamda]
+            S[119 - lamda] += (prev_d[i + 119 - lamda]) ** 2
+    N = np.argmax(R)
+    b = R[N] / S[N]
+    #print("N =", 120 - N)
+    return 120 - N, b
