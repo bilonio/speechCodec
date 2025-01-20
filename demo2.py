@@ -1,4 +1,5 @@
 import numpy as np
+from matplotlib import pyplot as plt
 from scipy.io import wavfile
 from encoder import RPE_frame_slt_coder
 from decoder import RPE_frame_slt_decoder
@@ -26,12 +27,12 @@ frames = np.array(frames, dtype=object)
 print(f"Number of frames: {len(frames)}", frames[0].shape)
 
 s0 = np.array(frames, dtype=object)
-prev_d = np.zeros(120)
+prev_d = np.zeros(160)
 prev_d = prev_d.tolist()  # convert to list
 for frame in range(len(frames) - 1):
     LARc, Nc, bc, e, d = RPE_frame_slt_coder(frames[frame], prev_d)
+    s0[frame] = RPE_frame_slt_decoder(LARc, Nc, bc, e, prev_d)
     prev_d = d 
-    s0[frame] = RPE_frame_slt_decoder(LARc, Nc, bc, e, d)
 print(s0.shape, frames[5].shape)
 
 decoded_signal = np.array(s0)
@@ -53,4 +54,16 @@ filename = "decoded_slt_signal.wav"
 wavfile.write(filename, sampling_rate, decoded_signal)
 
 print("Decoded signal has been written to", filename)
+
+# plot original vs. decoded signal
+plt.subplot(2, 1, 1)
+plt.plot(data[600:2000], label="Original Signal")
+plt.title('Original Signal')
+
+plt.subplot(2, 1, 2)
+plt.plot(decoded_signal[600:2000], label="Decoded Signal")
+plt.title('Decoded Signal')
+
+plt.tight_layout()
+plt.show()
     
