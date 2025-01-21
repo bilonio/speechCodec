@@ -2,12 +2,14 @@ import numpy as np
 from scipy.linalg import toeplitz
 from scipy.signal import lfilter
 import sys
+
 sys.path.append("./material")
 from hw_utils import (
     polynomial_coeff_to_reflection_coeff,
     reflection_coeff_to_polynomial_coeff,
 )
-from utils import decoding_coeff
+from utils import decoding_coeff, quantize_LAR
+
 
 def RPE_frame_st_coder(s0, prev_frame_st_resd):
     # s0: current frame
@@ -29,8 +31,8 @@ def RPE_frame_st_coder(s0, prev_frame_st_resd):
     s = np.zeros(160)  # preemphasized signal
     s[0] = s_of[0]
     beta = 28180 * (2 ** (-15))
-    for i in range(1, 160):
-        s[i] = s_of[i] - beta * s_of[i - 1]
+    s = lfilter([1, -beta], [1], s_of)
+
     # Short term analysis
     # LPC analysis section
 
@@ -46,7 +48,7 @@ def RPE_frame_st_coder(s0, prev_frame_st_resd):
 
     # Construct the Toeplitz matrix R using the ACF values
     R = toeplitz(ACF[:8])  # Create an 8x8 Toeplitz matrix from ACF[0] to ACF[7]
-   
+
     # Create the vector r using ACF values
     r = np.array(ACF[1:9])  # Use ACF[1] to ACF[8] for the r vector
 
@@ -60,21 +62,22 @@ def RPE_frame_st_coder(s0, prev_frame_st_resd):
     for i in range(0, len(r)):
         if np.abs(r[i]) < 0.675:
             LAR[i] = r[i]
-        elif  0.675 <= np.abs(r[i]) < 0.95:
+        elif 0.675 <= np.abs(r[i]) < 0.95:
             LAR[i] = np.sign(r[i]) * (2 * np.abs(r[i]) - 0.675)
         elif 0.95 <= np.abs(r[i]) <= 1.0:
             LAR[i] = np.sign(r[i]) * (8 * np.abs(r[i]) - 6.375)
 
-
     LARc = np.zeros(8)  # quantized LAR
     LARd = np.zeros(8)  # decoded LAR
-    rd = np.zeros(8) # decoded reflection coefficients
-    A = [20, 20, 20, 20, 13.637, 15.00, 8.334, 8.824] 
+    rd = np.zeros(8)  # decoded reflection coefficients
+    A = [20, 20, 20, 20, 13.637, 15.00, 8.334, 8.824]
     B = [0, 0, 4, -5, 0.184, -3.5, -0.666, -2.235]
-    for i in range(8):
-        z = A[i] * LAR[i] + B[i]
-        LARc[i] = int(z + np.sign(z) * 0.5) # quantization of LAR
-    
+
+    # Quantization of LAR
+    z = A * LAR + B
+    LARc = [quantize_LAR(z[i]) for i in range(8)]
+
+    # Decoding of the quantized Log-Area Rations
     coeffs = decoding_coeff(LARc, A, B)
 
     d = lfilter(coeffs, 1, s)  # apply FIR filter
@@ -82,68 +85,8 @@ def RPE_frame_st_coder(s0, prev_frame_st_resd):
 
 
 def RPE_frame_slt_coder(s0, prev_frame_st_resd):
-    # Preprocessing
-
-    # Offset compensation
-    s_of = np.zeros(160)  # offset compensated signal
-    alpha = 32735 * 2 ** (-15)
-    for i in range(1, 160):
-        s_of[i] = s0[i] - s0[i - 1] + alpha * s_of[i - 1]
-
-    # Preemphasis
-    s = np.zeros(160)  # preemphasized signal
-    beta = 28180 * 2 ** (-15)
-    for i in range(1, 160):
-        s[i] = s_of[i] - beta * s_of[i - 1]
-
-    # Short term analysis
-    # LPC analysis section
-
-    # Autocorrelation
-    ACF = np.zeros(9)  # autocorrelation coefficients
-    for k in range(9):
-        ACF[k] = sum([s[j] * s[j - k] for j in range(k, 160)])
-
-    # Calculate polynomial coefficients
-    w = np.zeros(8)  # polynomial coefficients
-    LAR = np.zeros(8)  # Linear Prediction Coefficients
-    R = np.zeros((8, 8))  # Prediction Coefficients
-
-    # Construct the Toeplitz matrix R using the ACF values
-    R = toeplitz(ACF[:8])  # Create an 8x8 Toeplitz matrix from ACF[0] to ACF[7]
-
-    # Create the vector r using ACF values
-    r = np.array(ACF[1:9])  # Use ACF[1] to ACF[8] for the r vector
-
-    w = np.linalg.solve(R, r) # solve the system of linear equations
-
-    # use existing function from hw_utils to convert poly coeff to reflection coefficients
-    r = polynomial_coeff_to_reflection_coeff(w)
-
-    # Transformation of reflection coefficients to LAR (Log Area Ratios)
-    for i in range(0, len(r)):
-        if np.abs(r[i]) < 0.675:
-            LAR[i] = r[i]
-        elif np.abs(r[i] >= 0.675 and np.abs(r[i]) < 0.95):
-            LAR[i] = np.sign(r[i]) * (2 * np.abs(r[i]) - 0.675)
-        elif np.abs(r[i] >= 0.95 and np.abs(r[i]) <= 1.0):
-            LAR[i] = np.sign(r[i]) * (8 * np.abs(r[i]) - 0.6375)
-
-    # Quantization of LAR
-    LARc = np.zeros(8)  # quantized LAR
-    A = [20, 20, 20, 20, 13.637, 15.00, 8.334, 8.824]
-    B = [0, 0, 4, -5, 0.184, -3.5, -0.666, -2.235]
-
-    for i in range(8):
-        z = A[i] * LAR[i] + B[i]
-        LARc[i] = int(z + np.sign(z) * 0.5)
-
-    # short-term analysis filtering section
-
-    # Decoding of the quantized Log-Area Rations
-    coeffs = decoding_coeff(LARc, A, B)
-
-    d = lfilter(coeffs, 1, s)  # apply FIR filter
+    # short term analysis
+    LARc, d = RPE_frame_st_coder(s0, prev_frame_st_resd)
 
     # Long term analysis
 
@@ -226,13 +169,13 @@ def RPE_frame_slt_coder(s0, prev_frame_st_resd):
             prev_d.append(e[kj + k] + b[j] * prev_d[119 + k - N[j]])
             if j != 3:
                 prev_d.pop(0)  # remove the first element
-        #for m in range(4):
-         #   for i in range(13):
-          #      x[m][i] = x[kj + m + 3 * i]
-           #     E[m] = sum(x[m][i] ** 2)
-        #M = np.argmax(M)  # find the maximum value
-        #Mc = M
-        #x_rpe = x[M]  # RPE sequence is the one with the maximum energy
+        # for m in range(4):
+        #   for i in range(13):
+        #      x[m][i] = x[kj + m + 3 * i]
+        #     E[m] = sum(x[m][i] ** 2)
+        # M = np.argmax(M)  # find the maximum value
+        # Mc = M
+        # x_rpe = x[M]  # RPE sequence is the one with the maximum energy
         # x_dec = x[M] ./ x_max # normalize the RPE sequence
 
     return LARc, Nc, bc, e, prev_d

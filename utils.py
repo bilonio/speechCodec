@@ -27,3 +27,6 @@ def decoding_coeff(LARc, A, B):
     coeffs = [a[0], -a[1], -a[2], -a[3], -a[4], -a[5], -a[6], -a[7], -a[8]] # FIR filter coefficients
 
     return coeffs
+
+def quantize_LAR(z):
+    return int(z + np.sign(z) * 0.5) # quantization of z

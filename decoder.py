@@ -50,19 +50,6 @@ def RPE_frame_slt_decoder(LARc, Nc, bc, curr_frame_ex_full, prev_frame_st_resd):
             )
             prev_frame_st_resd.append(d_synth[i + 40 * j])
 
-    # Short term synthesis filtering
-    A = [20, 20, 20, 20, 13.637, 15.00, 8.334, 8.824]
-    B = [0, 0, 4, -5, 0.184, -3.5, -0.666, -2.235]
-
-    # decode LARc
-    coeff = decoding_coeff(LARc, A, B)
-
-    # calculate decoded signal using FIR filter
-    s_dec = lfilter(coeff, 1, d_synth)
-
-    # post-processing
-    beta = 28180 * 2 ** (-15)
-    s_ro = np.zeros(160)
-    s_ro = lfilter([1], [1, -beta], s_dec)
+    s_ro = RPE_frame_st_decoder(LARc, d_synth)
 
     return s_ro
