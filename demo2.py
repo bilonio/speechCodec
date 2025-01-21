@@ -33,7 +33,7 @@ for frame in range(len(frames) - 1):
     LARc, Nc, bc, e, d = RPE_frame_slt_coder(frames[frame], prev_d)
     s0[frame] = RPE_frame_slt_decoder(LARc, Nc, bc, e, prev_d)
     prev_d = d 
-print(s0.shape, frames[5].shape)
+
 
 decoded_signal = np.array(s0)
 decoded_signal = np.concatenate(decoded_signal)
