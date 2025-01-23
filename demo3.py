@@ -1,8 +1,8 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.io import wavfile
-from encoder import RPE_frame_slt_coder
-from decoder import RPE_frame_slt_decoder
+from encoder import RPE_frame_coder
+from decoder import RPE_frame_decoder
 
 # Read the .wav file
 sample_rate, data = wavfile.read("./material/ena_dio_tria.wav")
@@ -30,8 +30,8 @@ s0 = np.array(frames, dtype=object)
 prev_d = np.zeros(160)
 prev_d = prev_d.tolist()  # convert to list
 for frame in range(len(frames) - 1):
-    LARc, Nc, bc, e, d = RPE_frame_slt_coder(frames[frame], prev_d)
-    s0[frame] = RPE_frame_slt_decoder(LARc, Nc, bc, e, prev_d)
+    frame_bit_stream,d = RPE_frame_coder(frames[frame], prev_d)
+    s0[frame], _ = RPE_frame_decoder(frame_bit_stream, prev_d)
     prev_d = d
 
 
@@ -49,7 +49,7 @@ decoded_signal = (decoded_signal / np.max(np.abs(decoded_signal))) * max_amplitu
 decoded_signal = decoded_signal.astype(np.int16)
 
 # Write to a WAV file
-filename = "decoded_slt_signal.wav"
+filename = "decoded_final_signal.wav"
 
 wavfile.write(filename, sampling_rate, decoded_signal)
 
