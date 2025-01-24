@@ -185,7 +185,6 @@ def RPE_frame_coder(s0, prev_frame_st_resd):
             bc[j] = 3
 
         set_bits(bits, 36 + j * 56, 7, Nc[j])
-        # print(bits[36 + j*56: 36 + j*56 + 7])
         set_bits(bits, 43 + j * 56, 2, bc[j])
 
         # decoding of bc values
