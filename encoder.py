@@ -51,7 +51,7 @@ def RPE_frame_st_coder(s0, prev_frame_st_resd):
         ACF[k] = sum([s[i] * s[i - k] for i in range(k, 160)])
 
     # Calculate reflection coefficients
-    w = np.zeros(8)  # reflection coefficients
+    w = np.zeros(9)  # reflection coefficients
     LAR = np.zeros(8)  # Linear Prediction Coefficients
     R = np.zeros((8, 8))  # Prediction Coefficients
 
@@ -61,11 +61,13 @@ def RPE_frame_st_coder(s0, prev_frame_st_resd):
     # Create the vector r using ACF values
     r = np.array(ACF[1:9])  # Use ACF[1] to ACF[8] for the r vector
 
-    w = np.linalg.solve(R, r)
+    w = np.linalg.solve(R,r)  # Solve the system of linear equations to get the reflection coefficients
+    w = np.append(1, -w)  # Append 1 to the beginning of the reflection coefficients
 
     # use existing function from hw_utils to convert poly coeff to reflection coefficients
     r = np.zeros(8)
     r = polynomial_coeff_to_reflection_coeff(w)
+    print(r)
 
     # Transformation of reflection coefficients to LAR (Log Area Ratios)
     for i in range(0, len(r)):
@@ -132,18 +134,13 @@ def RPE_frame_slt_coder(s0, prev_frame_st_resd):
         b[j] = QLB[bc[j]]
 
         # Long term analysis filtering and synthesis filtering
-        H = np.array(
-            [-134, -374, 0, 2054, 5741, 8192, 5741, 2054, 0, -374, -134]
-        )  # weighting filter
-        H = H * (2 ** (-13))  # scale the filter
-        x = np.zeros(40)  # output of the weighting filter
 
         for k in range(40):
-            # print(prev_d[kj - Nc[j]])
             e[kj + k] = d[kj + k] - bc[j] * prev_d[119 + k - Nc[j]]
             prev_d.append(e[kj + k] + b[j] * prev_d[119 + k - N[j]])
-            if j != 3:
+            if j!=3:
                 prev_d.pop(0)  # remove the first element
+            
 
     return LARc, Nc, bc, e, prev_d
 
@@ -169,6 +166,13 @@ def RPE_frame_coder(s0, prev_frame_st_resd):
     Nc = np.zeros(4, dtype=int)
     bc = np.zeros(4, dtype=int)
     e = np.zeros(160)
+    e_deq = np.zeros(40)
+    x = np.zeros(40)  # output of the weighting filter
+    xm = np.zeros((4,13))
+    E = np.zeros(4)
+    decoded_x_mc = np.zeros(13)
+    decoded_xm = np.zeros(13)
+    x_mc = np.zeros(13)
     for j in range(4):
         kj = k0 + 40 * j  # start of subframe
         N[j], b[j] = RPE_subframe_slt_lte(d[kj : kj + 40], prev_d)  # get N and b values
@@ -195,14 +199,11 @@ def RPE_frame_coder(s0, prev_frame_st_resd):
             [-134, -374, 0, 2054, 5741, 8192, 5741, 2054, 0, -374, -134]
         )  # weighting filter
         H = H * (2 ** (-13))  # scale the filter
-        x = np.zeros(40)  # output of the weighting filter
 
         for k in range(40):
             e[kj + k] = d[kj + k] - bc[j] * prev_d[119 + k - Nc[j]]
             x[k] = sum(H[i] * e[k + 5 - i] for i in range(11))
 
-        xm = np.zeros((4, 13))
-        E = np.zeros(4)
         for m in range(4):
             for i in range(13):
                 xm[m][i] = x[m + 3 * i]
@@ -222,7 +223,6 @@ def RPE_frame_coder(s0, prev_frame_st_resd):
             [-24577, -16385, -8193, -1, 8191, 16383, 24575, 32767]
         )
         normalized_rpe_bins = normalized_rpe_bins * (2 ** (-15))
-        x_mc = np.zeros(13)
         for i in range(13):
             x_mc[i], _ = quantize_values(
                 x_deq[i], normalized_rpe_bins
@@ -232,22 +232,19 @@ def RPE_frame_coder(s0, prev_frame_st_resd):
         decoded_x_mc_values = np.array(
             [-28672, -20480, -12288, -4096, 4096, 12288, 20480, 28672]
         ) * (2 ** (-15))
-        decoded_x_mc = np.zeros(13)
-        decoded_xm = np.zeros(13)
         for i in range(13):
             decoded_x_mc[i] = decoded_x_mc_values[int(x_mc[i])]
             decoded_xm[i] = decoded_x_mc[i] * x_max_deq
-        e_deq = np.zeros(40)
 
         for i in range(13):
             e_deq[i * 3 + Mc] = decoded_xm[i]
 
         for k in range(40):
-            prev_d.append(e_deq[k] + b[j] * prev_d[119 + k - N[j]])
-            if j != 3:
+            prev_d.append(e[kj+k] + b[j] * prev_d[119 + k - N[j]])
+            if j!=3:
                 prev_d.pop(0)  # remove the first element
 
-    return bits, prev_d
+    return bits, prev_d, e
 
 
 def RPE_subframe_slt_lte(d, prev_d):
@@ -255,7 +252,7 @@ def RPE_subframe_slt_lte(d, prev_d):
     S = np.zeros(80)
     for i in range(40):
         for lamda in range(40, 120):
-            # print("dokimh", i, lamda, prev_d[i+119 - lamda],d[i])
+            #print("dokimh", i, lamda, prev_d[i+119 - lamda],d[i])
             R[119 - lamda] += d[i] * prev_d[i + 119 - lamda]
             S[119 - lamda] += (prev_d[i + 119 - lamda]) ** 2
     N = np.argmax(R)

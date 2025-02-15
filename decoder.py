@@ -34,7 +34,7 @@ def RPE_frame_slt_decoder(LARc, Nc, bc, curr_frame_ex_full, prev_frame_st_resd):
     e = curr_frame_ex_full
     # decoding of Nc values
     N = Nc
-
+    
     # decoding of bc values
     b = np.zeros(4)
     QLB = [0.1, 0.35, 0.65, 1]
@@ -55,7 +55,7 @@ def RPE_frame_slt_decoder(LARc, Nc, bc, curr_frame_ex_full, prev_frame_st_resd):
     return s_ro
 
 
-def RPE_frame_decoder(frame_bit_stream, prev_frame_st_resd):
+def RPE_frame_decoder(frame_bit_stream, prev_frame_st_resd, e):
 
     # decode the bitstream
     LARc = LARc_from_bits(frame_bit_stream)

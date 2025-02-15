@@ -30,8 +30,8 @@ s0 = np.array(frames, dtype=object)
 prev_d = np.zeros(160)
 prev_d = prev_d.tolist()  # convert to list
 for frame in range(len(frames) - 1):
-    frame_bit_stream,d = RPE_frame_coder(frames[frame], prev_d)
-    s0[frame], _ = RPE_frame_decoder(frame_bit_stream, prev_d)
+    frame_bit_stream,d, e= RPE_frame_coder(frames[frame], prev_d)
+    s0[frame], _ = RPE_frame_decoder(frame_bit_stream, prev_d,e)
     prev_d = d
 
 
