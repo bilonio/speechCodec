@@ -61,13 +61,14 @@ def RPE_frame_st_coder(s0, prev_frame_st_resd):
     # Create the vector r using ACF values
     r = np.array(ACF[1:9])  # Use ACF[1] to ACF[8] for the r vector
 
-    w = np.linalg.solve(R,r)  # Solve the system of linear equations to get the reflection coefficients
-    w = np.append(1, -w)  # Append 1 to the beginning of the reflection coefficients
+    w = np.linalg.solve(
+        R, r
+    )  # Solve the system of linear equations to get the polynomial coefficients
+    w = np.append(1, -w)  # Append 1 to the beginning of the polynomial coefficients
 
     # use existing function from hw_utils to convert poly coeff to reflection coefficients
     r = np.zeros(8)
     r = polynomial_coeff_to_reflection_coeff(w)
-    print(r)
 
     # Transformation of reflection coefficients to LAR (Log Area Ratios)
     for i in range(0, len(r)):
@@ -83,8 +84,6 @@ def RPE_frame_st_coder(s0, prev_frame_st_resd):
     rd = np.zeros(8)  # decoded reflection coefficients
     A = [20, 20, 20, 20, 13.637, 15.00, 8.334, 8.824]
     B = [0, 0, 4, -5, 0.184, -3.5, -0.666, -2.235]
-    LARc_min = np.array([-32, -32, -16, -16, -8, -8, -4, -4])
-    LARc_max = np.array([31, 31, 15, 15, 7, 7, 3, 3])
 
     # Quantization of LAR
     z = A * LAR + B
@@ -100,13 +99,14 @@ def RPE_frame_st_coder(s0, prev_frame_st_resd):
 def RPE_frame_slt_coder(s0, prev_frame_st_resd):
     # short term analysis
     LARc, d = RPE_frame_st_coder(s0, prev_frame_st_resd)
+    prev_frame_st_resd = prev_frame_st_resd.tolist()  # convert to list
 
     # Long term analysis
 
     # Calculation of the LTP parameters
     # prev_d = prev_frame_st_resd[40:160]  # extract only the last 120 samples
     prev_d = prev_frame_st_resd[40:160]  # extract only the last 120 samples
-    # print(prev_d)
+
     k0 = 0
     DLB = [0.2, 0.5, 0.8]
     QLB = [0.1, 0.35, 0.65, 1]
@@ -138,14 +138,15 @@ def RPE_frame_slt_coder(s0, prev_frame_st_resd):
         for k in range(40):
             e[kj + k] = d[kj + k] - bc[j] * prev_d[119 + k - Nc[j]]
             prev_d.append(e[kj + k] + b[j] * prev_d[119 + k - N[j]])
-            if j!=3:
+            if j != 3:
                 prev_d.pop(0)  # remove the first element
-            
 
     return LARc, Nc, bc, e, prev_d
 
 
 def RPE_frame_coder(s0, prev_frame_st_resd):
+
+    prev_frame_st_resd = prev_frame_st_resd.tolist()  # convert to list
     bits = BitArray(length=260)
     # short term analysis
     LARc, d = RPE_frame_st_coder(s0, prev_frame_st_resd)
@@ -155,9 +156,7 @@ def RPE_frame_coder(s0, prev_frame_st_resd):
     # Long term analysis
 
     # Calculation of the LTP parameters
-    # prev_d = prev_frame_st_resd[40:160]  # extract only the last 120 samples
     prev_d = prev_frame_st_resd[40:160]  # extract only the last 120 samples
-    # print(prev_d)
     k0 = 0
     DLB = [0.2, 0.5, 0.8]
     QLB = [0.1, 0.35, 0.65, 1]
@@ -168,7 +167,7 @@ def RPE_frame_coder(s0, prev_frame_st_resd):
     e = np.zeros(160)
     e_deq = np.zeros(40)
     x = np.zeros(40)  # output of the weighting filter
-    xm = np.zeros((4,13))
+    xm = np.zeros((4, 13))
     E = np.zeros(4)
     decoded_x_mc = np.zeros(13)
     decoded_xm = np.zeros(13)
@@ -240,11 +239,11 @@ def RPE_frame_coder(s0, prev_frame_st_resd):
             e_deq[i * 3 + Mc] = decoded_xm[i]
 
         for k in range(40):
-            prev_d.append(e[kj+k] + b[j] * prev_d[119 + k - N[j]])
-            if j!=3:
+            prev_d.append(e[kj + k] + b[j] * prev_d[119 + k - N[j]])
+            if j != 3:
                 prev_d.pop(0)  # remove the first element
 
-    return bits, prev_d, e
+    return bits, prev_d
 
 
 def RPE_subframe_slt_lte(d, prev_d):
@@ -252,7 +251,6 @@ def RPE_subframe_slt_lte(d, prev_d):
     S = np.zeros(80)
     for i in range(40):
         for lamda in range(40, 120):
-            #print("dokimh", i, lamda, prev_d[i+119 - lamda],d[i])
             R[119 - lamda] += d[i] * prev_d[i + 119 - lamda]
             S[119 - lamda] += (prev_d[i + 119 - lamda]) ** 2
     N = np.argmax(R)

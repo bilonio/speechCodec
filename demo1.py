@@ -28,17 +28,14 @@ frames = np.array(frames, dtype=object)
 print(f"Number of frames: {len(frames)}", frames[0].shape)
 
 s0 = np.array(frames, dtype=object)
-d = np.zeros(160)
-prev_s0 = frames[0]
+prev_d = np.array(frames, dtype=object)
 for frame in range(len(frames) - 1):
-    LARc, d = RPE_frame_st_coder(prev_s0, d)
+    LARc, d = RPE_frame_st_coder(frames[frame], prev_d[frame])
     s0[frame] = RPE_frame_st_decoder(LARc, d)
-    prev_s0 = np.array(s0[frame])
-
+    prev_d[frame] = np.array(d)
 
 decoded_signal = np.array(s0)
 decoded_signal = np.concatenate(decoded_signal)
-print(decoded_signal.shape)
 
 # Sampling rate of the signal (e.g., 8000 Hz for 8 kHz audio)
 sampling_rate = 8000
@@ -59,11 +56,11 @@ print("Decoded signal has been written to", filename)
 # plot original vs. decoded signal
 plt.subplot(2, 1, 1)
 plt.plot(data[600:20000], label="Original Signal")
-plt.title('Original Signal')
+plt.title("Original Signal")
 
 plt.subplot(2, 1, 2)
 plt.plot(decoded_signal[600:20000], label="Decoded Signal")
-plt.title('Decoded Signal')
+plt.title("Decoded Signal")
 
 plt.tight_layout()
 plt.show()

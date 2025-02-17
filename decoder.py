@@ -25,11 +25,11 @@ def RPE_frame_st_decoder(LARc, curr_frame_st_resd):
     beta = 28180 * (2 ** (-15))
     s_ro = np.zeros(160)
     s_ro = lfilter([1], [1, -beta], s_dec)
-
     return s_ro
 
 
 def RPE_frame_slt_decoder(LARc, Nc, bc, curr_frame_ex_full, prev_frame_st_resd):
+    prev_frame_st_resd = prev_frame_st_resd.tolist()
 
     e = curr_frame_ex_full
     # decoding of Nc values
@@ -55,8 +55,8 @@ def RPE_frame_slt_decoder(LARc, Nc, bc, curr_frame_ex_full, prev_frame_st_resd):
     return s_ro
 
 
-def RPE_frame_decoder(frame_bit_stream, prev_frame_st_resd, e):
-
+def RPE_frame_decoder(frame_bit_stream, prev_frame_st_resd):
+    prev_frame_st_resd = prev_frame_st_resd.tolist()  # convert to list
     # decode the bitstream
     LARc = LARc_from_bits(frame_bit_stream)
     d_synth = np.zeros(160)

@@ -27,12 +27,12 @@ frames = np.array(frames, dtype=object)
 print(f"Number of frames: {len(frames)}", frames[0].shape)
 
 s0 = np.array(frames, dtype=object)
-prev_d = np.zeros(160)
-prev_d = prev_d.tolist()  # convert to list
+prev_d = np.array(frames, dtype=object)  # Store previous frame residuals
+
 for frame in range(len(frames) - 1):
-    frame_bit_stream,d, e= RPE_frame_coder(frames[frame], prev_d)
-    s0[frame], _ = RPE_frame_decoder(frame_bit_stream, prev_d,e)
-    prev_d = d
+    frame_bit_stream, d = RPE_frame_coder(frames[frame], prev_d[frame])
+    s0[frame], d = RPE_frame_decoder(frame_bit_stream, prev_d[frame])
+    prev_d[frame] = d
 
 
 decoded_signal = np.array(s0)
@@ -57,11 +57,11 @@ print("Decoded signal has been written to", filename)
 
 # plot original vs. decoded signal
 plt.subplot(2, 1, 1)
-plt.plot(data[600:2000], label="Original Signal")
+plt.plot(data[600:20000], label="Original Signal")
 plt.title("Original Signal")
 
 plt.subplot(2, 1, 2)
-plt.plot(decoded_signal[600:2000], label="Decoded Signal")
+plt.plot(decoded_signal[600:20000], label="Decoded Signal")
 plt.title("Decoded Signal")
 
 plt.tight_layout()

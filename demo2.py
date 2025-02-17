@@ -27,12 +27,12 @@ frames = np.array(frames, dtype=object)
 print(f"Number of frames: {len(frames)}", frames[0].shape)
 
 s0 = np.array(frames, dtype=object)
-prev_d = np.zeros(160)
-prev_d = prev_d.tolist()  # convert to list
+prev_d = np.array(frames, dtype=object)
+
 for frame in range(len(frames) - 1):
-    LARc, Nc, bc, e, d = RPE_frame_slt_coder(s0[frame], prev_d)
-    s0[frame] = RPE_frame_slt_decoder(LARc, Nc, bc, e, prev_d)
-    prev_d = d
+    LARc, Nc, bc, e, d = RPE_frame_slt_coder(frames[frame], prev_d[frame])
+    s0[frame] = RPE_frame_slt_decoder(LARc, Nc, bc, e, prev_d[frame])
+    prev_d[frame] = d
 
 
 decoded_signal = np.array(s0)
