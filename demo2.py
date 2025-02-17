@@ -3,6 +3,8 @@ from matplotlib import pyplot as plt
 from scipy.io import wavfile
 from encoder import RPE_frame_slt_coder
 from decoder import RPE_frame_slt_decoder
+from scipy.signal import wiener
+
 
 # Read the .wav file
 sample_rate, data = wavfile.read("./material/ena_dio_tria.wav")
@@ -30,7 +32,7 @@ s0 = np.array(frames, dtype=object)
 prev_d = np.array(frames, dtype=object)
 
 for frame in range(len(frames) - 1):
-    LARc, Nc, bc, e, d = RPE_frame_slt_coder(frames[frame], prev_d[frame])
+    LARc, Nc, bc, e, d = RPE_frame_slt_coder(s0[frame], prev_d[frame])
     s0[frame] = RPE_frame_slt_decoder(LARc, Nc, bc, e, prev_d[frame])
     prev_d[frame] = d
 

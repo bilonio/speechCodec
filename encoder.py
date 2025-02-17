@@ -92,7 +92,7 @@ def RPE_frame_st_coder(s0, prev_frame_st_resd):
     # Decoding of the quantized Log-Area Rations
     coeffs = decoding_coeff(LARc, A, B)
 
-    d = lfilter(coeffs, 1, s)  # apply FIR filter
+    d = lfilter(coeffs, 1, s)  # get the residual of the current frame
     return LARc, d
 
 
@@ -104,7 +104,6 @@ def RPE_frame_slt_coder(s0, prev_frame_st_resd):
     # Long term analysis
 
     # Calculation of the LTP parameters
-    # prev_d = prev_frame_st_resd[40:160]  # extract only the last 120 samples
     prev_d = prev_frame_st_resd[40:160]  # extract only the last 120 samples
 
     k0 = 0
@@ -239,7 +238,7 @@ def RPE_frame_coder(s0, prev_frame_st_resd):
             e_deq[i * 3 + Mc] = decoded_xm[i]
 
         for k in range(40):
-            prev_d.append(e[kj + k] + b[j] * prev_d[119 + k - N[j]])
+            prev_d.append(e_deq[k] + b[j] * prev_d[119 + k - N[j]])
             if j != 3:
                 prev_d.pop(0)  # remove the first element
 

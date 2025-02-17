@@ -24,13 +24,10 @@ for i in range(0, len(data), frame_size):
 # Convert frames to a numpy array for easier manipulation
 frames = np.array(frames, dtype=object)
 
-# Example: Print number of frames
-print(f"Number of frames: {len(frames)}", frames[0].shape)
-
 s0 = np.array(frames, dtype=object)
 prev_d = np.array(frames, dtype=object)
 for frame in range(len(frames) - 1):
-    LARc, d = RPE_frame_st_coder(frames[frame], prev_d[frame])
+    LARc, d = RPE_frame_st_coder(s0[frame], prev_d[frame])
     s0[frame] = RPE_frame_st_decoder(LARc, d)
     prev_d[frame] = np.array(d)
 
@@ -48,7 +45,7 @@ decoded_signal = (decoded_signal / np.max(np.abs(decoded_signal))) * max_amplitu
 decoded_signal = decoded_signal.astype(np.int16)
 
 # Write to a WAV file
-filename = "decoded_signal.wav"
+filename = "decoded_st_signal.wav"
 wavfile.write(filename, sampling_rate, decoded_signal)
 
 print("Decoded signal has been written to", filename)
@@ -56,11 +53,11 @@ print("Decoded signal has been written to", filename)
 # plot original vs. decoded signal
 plt.subplot(2, 1, 1)
 plt.plot(data[600:20000], label="Original Signal")
-plt.title("Original Signal")
+plt.title('Original Signal')
 
 plt.subplot(2, 1, 2)
 plt.plot(decoded_signal[600:20000], label="Decoded Signal")
-plt.title("Decoded Signal")
+plt.title('Decoded Signal')
 
 plt.tight_layout()
 plt.show()

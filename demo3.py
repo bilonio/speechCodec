@@ -23,14 +23,11 @@ for i in range(0, len(data), frame_size):
 # Convert frames to a numpy array for easier manipulation
 frames = np.array(frames, dtype=object)
 
-# Example: Print number of frames
-print(f"Number of frames: {len(frames)}", frames[0].shape)
-
 s0 = np.array(frames, dtype=object)
 prev_d = np.array(frames, dtype=object)  # Store previous frame residuals
 
 for frame in range(len(frames) - 1):
-    frame_bit_stream, d = RPE_frame_coder(frames[frame], prev_d[frame])
+    frame_bit_stream, d = RPE_frame_coder(s0[frame], prev_d[frame])
     s0[frame], d = RPE_frame_decoder(frame_bit_stream, prev_d[frame])
     prev_d[frame] = d
 

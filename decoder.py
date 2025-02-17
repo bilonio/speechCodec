@@ -75,17 +75,17 @@ def RPE_frame_decoder(frame_bit_stream, prev_frame_st_resd):
     QLB = [0.1, 0.35, 0.65, 1]
     bins = read_bins()
     for j in range(4):
-        Nc[j] = get_bits(frame_bit_stream, 36 + j * 56, 7).uint
-        bc[j] = get_bits(frame_bit_stream, 43 + j * 56, 2).uint
-        Mc[j] = get_bits(frame_bit_stream, 45 + 56 * j, 2).uint
-        x_maxc = get_bits(frame_bit_stream, 47 + 56 * j, 6).uint
-        x_max_deq = bins[x_maxc]
-        b[j] = QLB[int(bc[j])]
+        Nc[j] = get_bits(frame_bit_stream, 36 + j * 56, 7).uint # extract Nc values
+        bc[j] = get_bits(frame_bit_stream, 43 + j * 56, 2).uint # extract bc values
+        Mc[j] = get_bits(frame_bit_stream, 45 + 56 * j, 2).uint # extract Mc values
+        x_maxc = get_bits(frame_bit_stream, 47 + 56 * j, 6).uint # extract x_maxc values
+        x_max_deq = bins[x_maxc] # dequantized x_maxc values
+        b[j] = QLB[int(bc[j])] # dequantized bc values
         for i in range(13):
-            x_mc[i] = get_bits(frame_bit_stream, 53 + 56 * j + 3 * i, 3).uint
-            decoded_x_mc[i] = decoded_x_mc_values[int(x_mc[i])]
-            decoded_xm[i] = decoded_x_mc[i] * x_max_deq
-            e_deq[i * 3 + int(Mc[j])] = decoded_xm[i]
+            x_mc[i] = get_bits(frame_bit_stream, 53 + 56 * j + 3 * i, 3).uint # extract x_mc values
+            decoded_x_mc[i] = decoded_x_mc_values[int(x_mc[i])] # decoded x_mc values
+            decoded_xm[i] = decoded_x_mc[i] * x_max_deq # decoded xm values
+            e_deq[i * 3 + int(Mc[j])] = decoded_xm[i] # decoded e values
 
         N[j] = Nc[j]
         for i in range(40):
